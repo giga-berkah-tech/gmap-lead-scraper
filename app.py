@@ -179,8 +179,8 @@ def start_scraping():
                     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
                     filename_base = f"google_maps_data_{search_input_value}_{timestamp}".replace(' ', '_')
 
-                    business_list.save_to_excel(filename_base)
-                    # business_list.save_to_csv(filename_base)
+                    # business_list.save_to_excel(filename_base)
+                    business_list.save_to_csv(filename_base)
                     print(f"Finished scraping for {search_input_value}.")
                 
                 time.sleep(2)  # Delay to avoid continuous looping and page load delays

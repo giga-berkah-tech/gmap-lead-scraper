@@ -46,7 +46,7 @@
       }
 
       function downloadXlsx(filename) {
-        fetch(`/download/xlsx/${filename}`, {
+        fetch(`/download/csv/${filename}`, {
           method: "GET",
         })
         .then((response) => {
