@@ -6,47 +6,31 @@
     <title>Google Maps Scraper</title>
     <script>
       function startScraping() {
-        fetch("/start_scraping", {
+        fetch("/googlemap/start_scraping", {
           method: "POST",
         })
           .then((response) => response.json())
-          .then((data) => console.log(data.message));
+          .then((data) => alert(data.message));
       }
 
       function stopScraping() {
-        fetch("/stop_scraping", {
+        fetch("/googlemap/stop_scraping", {
           method: "POST",
         })
           .then((response) => response.json())
-          .then((data) => console.log(data.message));
-      }
-
-      function openBrowser() {
-        fetch("/open_browser", {
-          method: "POST",
-        })
-          .then((response) => response.json())
-          .then((data) => console.log(data.message));
-      }
-
-      function closeBrowser() {
-        fetch("/close_browser", {
-          method: "POST",
-        })
-          .then((response) => response.json())
-          .then((data) => console.log(data.message));
+          .then((data) => alert(data.message));
       }
 
       function resetDownloadList() {
-        fetch("/delete_folder_contents", {
+        fetch("/googlemap/delete_folder_contents", {
           method: "POST",
         })
           .then((response) => response.json())
-          .then((data) => console.log(data.message));
+          .then((data) => alert(data.message));
       }
 
       function downloadXlsx(filename) {
-        fetch(`/download/csv/${filename}`, {
+        fetch(`/googlemap/download/csv/${filename}`, {
           method: "GET",
         })
         .then((response) => {
@@ -69,7 +53,7 @@
       }
 
       function downloadList() {
-        fetch("/list/filenames", {
+        fetch("/googlemap/list/filenames", {
           method: "GET",
         })
           .then((response) => response.json())
@@ -100,8 +84,8 @@
   </head>
   <body>
     <h1>Google Maps Scraper</h1>
-    <button onclick="openBrowser()">Open Browser</button>
-    <button onclick="closeBrowser()">Close Browser</button>
+    <!-- <button onclick="openBrowser()">Open Browser</button>
+    <button onclick="closeBrowser()">Close Browser</button> -->
     <p>Click the buttons below to control scraping.</p>
     <button onclick="startScraping()">Start Scraping</button>
     <button onclick="stopScraping()">Stop Scraping</button>
