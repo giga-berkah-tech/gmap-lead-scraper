@@ -63,14 +63,18 @@ class BusinessList:
             filename (str): filename
         """
         
-        try:
-            with open(f"output/{filename}.csv", "r") as f:
-                existing_data = f.read()
-            self.dataframe().to_csv(f"output/{filename}.csv", mode='a', index=False, header=False)
-        except FileNotFoundError:
-            if not os.path.exists(self.save_at):
-                os.makedirs(self.save_at)
-            self.dataframe().to_csv(f"output/{filename}.csv", index=False)
+        if not os.path.exists(self.save_at):
+            os.makedirs(self.save_at)
+        self.dataframe().to_csv(f"output/{filename}.csv", index=False)
+    
+        # try:
+        #     with open(f"output/{filename}.csv", "r") as f:
+        #         existing_data = f.read()
+        #     self.dataframe().to_csv(f"output/{filename}.csv", mode='a', index=False, header=False)
+        # except FileNotFoundError:
+        #     if not os.path.exists(self.save_at):
+        #         os.makedirs(self.save_at)
+        #     self.dataframe().to_csv(f"output/{filename}.csv", index=False)
 
         
 
@@ -128,115 +132,78 @@ def start_scraping():
                     scraping_manager.page.keyboard.press("Enter")
                     time.sleep(5)  # Wait for the search results to appear
                     
-                    # scrolling
-                    scraping_manager.page.hover('//a[contains(@href, "https://www.google.com/maps/place")]')
+                    scraped_listings = set()  # To track already scraped listings
+                    business_list = BusinessList()  # Store scraped businesses
 
-                    # Scroll and determine how many results are displayed on the map
-                    previously_counted = 0
-                    while scraping_manager.scraping_active:  # Add a check for scraping_active in the scroll loop
-                        scraping_manager.page.mouse.wheel(0, 10000)
-                        time.sleep(3)
+                    while scraping_manager.scraping_active:
+                        # Locate all current listings on the page
+                        listings = scraping_manager.page.locator('//a[contains(@href, "https://www.google.com/maps/place")]').all()
+                        index = 0
+                        
+                        for listing in listings:
+                            # Exit the loop if scraping is stopped
+                            if not scraping_manager.scraping_active:
+                                print("Scraping stopped during listing details scraping.")
+                                break 
+                        
+                            # Skip already scraped listings
+                            listing_url = listing.get_attribute("href")
+                            if listing_url in scraped_listings:
+                                continue
 
-                        # Count how many listings are available
-                        current_count = scraping_manager.page.locator('//a[contains(@href, "https://www.google.com/maps/place")]').count()
-                        if current_count >= scraping_manager.total_results:
-                            listings = scraping_manager.page.locator('//a[contains(@href, "https://www.google.com/maps/place")]').all()[:scraping_manager.total_results]
-                            print(f"Scraped total of: {len(listings)} listings")
-                            break
-                        elif current_count == previously_counted:
-                            listings = scraping_manager.page.locator('//a[contains(@href, "https://www.google.com/maps/place")]').all()
-                            print(f"Arrived at all available listings, total scraped: {len(listings)}")
-                            break
-                        else:
-                            previously_counted = current_count
-                            print(f"Currently scraped: {current_count} listings")
+                            try:
+                                # Mark listing as scraped
+                                scraped_listings.add(listing_url)
 
-                        # If scraping is stopped during the loop, exit the loop
-                        if not scraping_manager.scraping_active:
-                            print("Scraping stopped during listing iteration.")
-                            break
+                                # Click on the listing to load details
+                                listing.click()
+                                time.sleep(5)
 
-                    # Scrape business details for each listing (this part can be enhanced)
-                    business_list = BusinessList()
-                    for listing in listings:
-                        if not scraping_manager.scraping_active:
-                            print("Scraping stopped during listing details scraping.")
-                            break  # Exit the loop if scraping is stopped
+                                # Example: Scraping business details
+                                business = Business()
+                                business.name = listing.get_attribute("aria-label") or ""
+                                business.latitude, business.longitude = extract_coordinates_from_url(scraping_manager.page.url)
 
-                        try:
-                            # Click on the listing to load more details
-                            listing.click()
-                            time.sleep(5)
-
-                            # Example: Scraping business details
-                            name_attibute = 'aria-label'
-                            address_xpath = f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute(name_attibute)}")]//button[@data-item-id="address"]//div[contains(@class, "fontBodyMedium")]'
-                            website_xpath = f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute(name_attibute)}")]//a[@data-item-id="authority"]//div[contains(@class, "fontBodyMedium")]'
-                            phone_number_xpath = f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute(name_attibute)}")]//button[contains(@data-item-id, "phone:tel:")]//div[contains(@class, "fontBodyMedium")]'
-                            review_count_xpath = '//button[@jsaction="pane.reviewChart.moreReviews"]//span'
-                            reviews_average_xpath = '//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]'
-                            
-                            business = Business()
-                            
-                            if len(listing.get_attribute(name_attibute)) >= 1:
-                                business.name = listing.get_attribute(name_attibute)
-                            else:
-                                business.name = ""
-                            if scraping_manager.page.locator(address_xpath).count() > 0:
-                                business.address = scraping_manager.page.locator(address_xpath).all()[0].inner_text()
-                            else:
-                                business.address = ""
-                            if scraping_manager.page.locator(website_xpath).count() > 0:
-                                business.website = scraping_manager.page.locator(website_xpath).all()[0].inner_text()
-                            else:
-                                business.website = ""
-                            if scraping_manager.page.locator(phone_number_xpath).count() > 0:
-                                business.phone_number = scraping_manager.page.locator(phone_number_xpath).all()[0].inner_text()
-                            else:
-                                business.phone_number = ""
-                            if scraping_manager.page.locator(review_count_xpath).count() > 0:
-                                business.reviews_count = int(
-                                    scraping_manager.page.locator(review_count_xpath).inner_text()
-                                    .split()[0]
-                                    .replace(',','')
-                                    .strip()
-                                )
-                            else:
-                                business.reviews_count = ""
+                                # Additional details
+                                address_locator = scraping_manager.page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//button[@data-item-id="address"]//div[contains(@class, "fontBodyMedium")]')
+                                business.address = address_locator.inner_text() if address_locator.count() > 0 else ""
                                 
-                            if scraping_manager.page.locator(reviews_average_xpath).count() > 0:
-                                business.reviews_average = float(
-                                    scraping_manager.page.locator(reviews_average_xpath).get_attribute(name_attibute)
-                                    .split()[0]
-                                    .replace(',','.')
-                                    .strip())
-                            else:
-                                business.reviews_average = ""
-                            
-                            business.latitude, business.longitude = extract_coordinates_from_url(scraping_manager.page.url)
-                            
-                            business_list.business_list.append(business)
-                        except Exception as e:
-                            print(f"Error occurred while scraping the listing: {e}")
+                                website_locator = scraping_manager.page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//a[@data-item-id="authority"]//div[contains(@class, "fontBodyMedium")]')
+                                business.website = website_locator.inner_text() if website_locator.count() > 0 else ""
 
-                            
-                    ########
-                    # output
-                    ########
+                                phone_locator = scraping_manager.page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//button[contains(@data-item-id, "phone:tel:")]//div[contains(@class, "fontBodyMedium")]')
+                                business.phone_number = phone_locator.inner_text() if phone_locator.count() > 0 else ""
+                                
+                                review_count_locator = scraping_manager.page.locator('//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]')
+                                business.reviews_count = int(review_count_locator.get_attribute("aria-label").split()[0].replace(',','').strip()) if review_count_locator.count() > 0 else "0"
+                                
+                                review_average_locator = scraping_manager.page.locator('//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]')
+                                business.reviews_average = float(review_average_locator.get_attribute("aria-label").split()[0].replace(',','').strip()) if review_average_locator.count() > 0 else "0"
+
+                                business_list.business_list.append(business)
+                                
+                                print(f"{index + 1}. Scraped: {business.name}")
+
+                            except Exception as e:
+                                print(f"Error occurred while scraping the listing: {e}")
+                        
+                        # Scroll to load more results
+                        scraping_manager.page.mouse.wheel(0, 1000)
+                        time.sleep(3)
+                    
+                    # Save data after exiting the loop
                     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
                     filename_base = f"google_maps_data_{search_input_value}_{timestamp}".replace(' ', '_')
-
-                    # business_list.save_to_excel(filename_base)
                     business_list.save_to_csv(filename_base)
+
                     print(f"Finished scraping for {search_input_value}.")
-                
-                time.sleep(2)  # Delay to avoid continuous looping and page load delays
-                scraping_manager.scraping_active = False
-        
+                    scraping_manager.scraping_active = False
+
         print("Scraping finished.")
     except Exception as e:
         print(f"Error during scraping: {e}")
         scraping_manager.scraping_active = False
+
         
 
 def stop_scraping():

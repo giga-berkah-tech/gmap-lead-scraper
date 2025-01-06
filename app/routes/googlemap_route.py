@@ -4,6 +4,7 @@ import threading
 from flask import Blueprint, jsonify, render_template, send_file
 from app.services.googlemap_service import start_scraping, stop_scraping, OUTPUT_DIR
 from app.state.scraping_manager import scraping_manager
+import pandas as pd
 
 googlemap_route = Blueprint('googlemap_route', __name__)
 
@@ -33,6 +34,23 @@ def stop_scraping_route():
 def list_filenames():
     filenames = os.listdir(OUTPUT_DIR)
     return jsonify({"filenames": filenames})
+
+@googlemap_route.route('/view/csv/<filename>', methods=['GET'])
+def view_csv(filename):
+    file_path = os.path.join(OUTPUT_DIR, filename)
+    if not os.path.exists(file_path):
+        return jsonify({"message": "File not found"}), 404
+
+    df = pd.read_csv(file_path)
+
+    html_table = df.to_html(classes='data', header="true")
+    return render_template('view_csv.html', table=html_table)
+
+@googlemap_route.route('/open_new_tab/csv/<filename>', methods=['GET'])
+def open_new_tab(filename):
+    tab = scraping_manager.browser.new_page()
+    tab.goto(f"http://localhost:5000/googlemap/view/csv/{filename}", timeout=60000)
+    return jsonify({"message": "New tab opened."})
 
 
 # Route for auto download of CSV and Excel files

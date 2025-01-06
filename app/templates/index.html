@@ -52,6 +52,16 @@
         .catch((error) => console.error("Error downloading file:", error));
       }
 
+      function viewCsvFile(filename) {
+        // Memanggil API Flask untuk membuka halaman dengan file CSV
+        fetch(`/googlemap/open_new_tab/csv/${filename}`, {
+          method: "GET",
+        })
+          .then(response => response.json())
+          .then(data => console.log(data.message))
+          .catch((error) => console.error('Error:', error));
+      }      
+
       function downloadList() {
         fetch("/googlemap/list/filenames", {
           method: "GET",
@@ -73,7 +83,12 @@
                 downloadButton.style.marginLeft = "10px";
                 downloadButton.onclick = () => downloadXlsx(filename);
 
+                const viewButton = document.createElement("p");
+                viewButton.textContent = "http://localhost:5000/googlemap/view/csv/" + filename;
+                viewButton.style.marginLeft = "10px";
+
                 listItem.appendChild(downloadButton);
+                listItem.appendChild(viewButton);
                 fileListContainer.appendChild(listItem);
               });
             }
@@ -84,8 +99,6 @@
   </head>
   <body>
     <h1>Google Maps Scraper</h1>
-    <!-- <button onclick="openBrowser()">Open Browser</button>
-    <button onclick="closeBrowser()">Close Browser</button> -->
     <p>Click the buttons below to control scraping.</p>
     <button onclick="startScraping()">Start Scraping</button>
     <button onclick="stopScraping()">Stop Scraping</button>

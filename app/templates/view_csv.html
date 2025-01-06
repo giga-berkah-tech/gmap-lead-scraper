@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>View CSV File</title>
+    <style>
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      table.data th, table.data td {
+        padding: 8px;
+        text-align: left;
+        border: 1px solid #ddd;
+      }
+
+      table.data th {
+        background-color: #f2f2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CSV File Data</h1>
+    <div>{{ table|safe }}</div>
+    <br>
+    <a href="/" style="text-decoration: none;">Back to main page</a>
+  </body>
+</html>
