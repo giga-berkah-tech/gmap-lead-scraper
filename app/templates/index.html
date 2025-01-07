@@ -10,7 +10,10 @@
           method: "POST",
         })
           .then((response) => response.json())
-          .then((data) => alert(data.message));
+          .then((data) => {
+            if( data["message"]){
+              console.log(data["message"]);
+            };});
       }
 
       function stopScraping() {
@@ -83,8 +86,10 @@
                 downloadButton.style.marginLeft = "10px";
                 downloadButton.onclick = () => downloadXlsx(filename);
 
-                const viewButton = document.createElement("p");
-                viewButton.textContent = "http://localhost:5000/googlemap/view/csv/" + filename;
+                const viewButton = document.createElement("a");
+                viewButton.href = "http://localhost:5000/googlemap/view/csv/" + filename;
+                viewButton.textContent = "View";
+                viewButton.target = "_blank";
                 viewButton.style.marginLeft = "10px";
 
                 listItem.appendChild(downloadButton);
