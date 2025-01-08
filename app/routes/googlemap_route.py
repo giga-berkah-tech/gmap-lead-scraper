@@ -1,8 +1,9 @@
+import asyncio
 import os
 import shutil
 import threading
 from flask import Blueprint, jsonify, render_template, send_file
-from app.services.googlemap_service import start_scraping, stop_scraping, OUTPUT_DIR
+from app.services.googlemap_service import start_scraping, stop_scraping, OUTPUT_DIR, open_browser, close_browser
 from app.state.scraping_manager import scraping_manager
 import pandas as pd
 
@@ -11,6 +12,20 @@ googlemap_route = Blueprint('googlemap_route', __name__)
 @googlemap_route.route('/')
 def index():
     return render_template('index.html')
+
+@googlemap_route.route('/open_browser', methods=['POST'])
+def open_browser_route():
+    if scraping_manager.chromium_open:
+        return jsonify({"message": "Tab is already open."})
+    open_browser()
+    return jsonify({"message": "Browser opened."})
+
+@googlemap_route.route('/close_browser', methods=['POST'])
+def close_browser_route():
+    if not scraping_manager.chromium_open:
+        return jsonify({"message": "Tab is not open."})
+    close_browser()
+    return jsonify({"message": "Browser closed."})
 
 @googlemap_route.route('/start_scraping', methods=['POST'])
 def start_scraping_route():

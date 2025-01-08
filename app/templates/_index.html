@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Maps Scraper</title>
+    <script>
+      function startScraping() {
+        fetch("/googlemap/start_scraping", {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => alert(data.message));
+      }
+
+      function stopScraping() {
+        fetch("/googlemap/stop_scraping", {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => alert(data.message));
+      }
+
+      function resetDownloadList() {
+        fetch("/googlemap/delete_folder_contents", {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => alert(data.message));
+      }
+
+      function downloadXlsx(filename) {
+        fetch(`/googlemap/download/csv/${filename}`, {
+          method: "GET",
+        })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to download file: ${response.statusText}`);
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch((error) => console.error("Error downloading file:", error));
+      }
+
+      function viewCsvFile(filename) {
+        // Memanggil API Flask untuk membuka halaman dengan file CSV
+        fetch(`/googlemap/open_new_tab/csv/${filename}`, {
+          method: "GET",
+        })
+          .then(response => response.json())
+          .then(data => console.log(data.message))
+          .catch((error) => console.error('Error:', error));
+      }      
+
+      function downloadList() {
+        fetch("/googlemap/list/filenames", {
+          method: "GET",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const fileListContainer = document.getElementById("file-list");
+            fileListContainer.innerHTML = ""; 
+
+            if (data.filenames.length === 0) {
+              fileListContainer.innerHTML = "<li>No files found</li>";
+            } else {
+              data.filenames.forEach((filename) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = filename;
+
+                const downloadButton = document.createElement("button");
+                downloadButton.textContent = "Download";
+                downloadButton.style.marginLeft = "10px";
+                downloadButton.onclick = () => downloadXlsx(filename);
+
+                const viewButton = document.createElement("p");
+                viewButton.textContent = "http://localhost:5000/googlemap/view/csv/" + filename;
+                viewButton.style.marginLeft = "10px";
+
+                listItem.appendChild(downloadButton);
+                listItem.appendChild(viewButton);
+                fileListContainer.appendChild(listItem);
+              });
+            }
+          })
+          .catch((error) => console.error("Error fetching file list:", error));
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Google Maps Scraper</h1>
+    <p>Click the buttons below to control scraping.</p>
+    <button onclick="startScraping()">Start Scraping</button>
+    <button onclick="stopScraping()">Stop Scraping</button>
+    <p>Click the buttons below to download or reset scraping results.</p>
+    <button onclick="downloadList()">Get File List</button>
+    <button onclick="resetDownloadList()">Reset File List</button>
+    <ul id="file-list">
+  </body>
+</html>

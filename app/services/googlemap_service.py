@@ -85,35 +85,28 @@ def extract_coordinates_from_url(url: str) -> tuple[float,float]:
     # return latitude, longitude
     return float(coordinates.split(',')[0]), float(coordinates.split(',')[1])
 
+def open_browser():
+    if not scraping_manager.chromium_open:
+        page = scraping_manager.browser.new_page()
+        page.goto("https://www.google.com/maps", timeout=60000)
+        scraping_manager.googlemap_page = page
+        scraping_manager.chromium_open = True
+        print("Chromium opened and Google Maps loaded.")
+    else:
+        print("Chromium is already open.")
 
-# def open_browser():
-#     scraping_active, page, browser, total_results, filename_base = scraping_manager
-    
-#     if not chromium_open:
-#         with sync_playwright() as p:
-#             user_data_dir = os.path.join(os.getcwd(), "user_data")  # Persistent profile storage
-#             browser = p.chromium.launch_persistent_context(
-#                 user_data_dir=user_data_dir, headless=False
-#             )
-#             page = browser.pages[0] if browser.pages else browser.new_page()
-#             page.goto("https://www.google.com/maps", timeout=60000)
-#             chromium_open = True
-#             print("Chromium opened and Google Maps loaded.")
-#             while chromium_open:
-#                 time.sleep(1)
-#     else:
-#         print("Chromium is already open.")
+# To run the function in an asyncio event loop
+# asyncio.run(open_browser())
 
-# # Fungsi untuk menutup browser
-# def close_browser():
-#     chromium_open, browser = scraping_manager
-    
-#     if chromium_open:
-#         browser.close()
-#         chromium_open = False
-#         print("Chromium closed.")
-#     else:
-#         print("Chromium is not open.")
+
+def close_browser():
+    if scraping_manager.chromium_open:
+        scraping_manager.googlemap_page.close()
+        scraping_manager.googlemap_page = None
+        scraping_manager.chromium_open = False
+        print("Tab closed.")
+    else:
+        print("Tab is not open.")
 
 
 def start_scraping():
@@ -122,23 +115,22 @@ def start_scraping():
         print("Scraping started...")
 
         while scraping_manager.scraping_active:
-            if scraping_manager.page.locator("//input[@id='searchboxinput']").is_visible():
-                search_input_value = scraping_manager.page.locator("//input[@id='searchboxinput']").input_value()
+            if scraping_manager.googlemap_page.locator("//input[@id='searchboxinput']").is_visible():
+                search_input_value = scraping_manager.googlemap_page.locator("//input[@id='searchboxinput']").input_value()
                 if search_input_value:
                     print(f"Searching for: {search_input_value}")
 
                     # Input the search query into Google Maps and press Enter
-                    scraping_manager.page.locator("//input[@id='searchboxinput']").fill(search_input_value)
-                    scraping_manager.page.keyboard.press("Enter")
+                    scraping_manager.googlemap_page.locator("//input[@id='searchboxinput']").fill(search_input_value)
+                    scraping_manager.googlemap_page.keyboard.press("Enter")
                     time.sleep(5)  # Wait for the search results to appear
                     
                     scraped_listings = set()  # To track already scraped listings
                     business_list = BusinessList()  # Store scraped businesses
 
                     while scraping_manager.scraping_active:
-                        # Locate all current listings on the page
-                        listings = scraping_manager.page.locator('//a[contains(@href, "https://www.google.com/maps/place")]').all()
-                        index = 0
+                        # Locate all current listings on the googlemap_page
+                        listings = scraping_manager.googlemap_page.locator('//a[contains(@href, "https://www.google.com/maps/place")]').all()
                         
                         for listing in listings:
                             # Exit the loop if scraping is stopped
@@ -162,33 +154,33 @@ def start_scraping():
                                 # Example: Scraping business details
                                 business = Business()
                                 business.name = listing.get_attribute("aria-label") or ""
-                                business.latitude, business.longitude = extract_coordinates_from_url(scraping_manager.page.url)
+                                business.latitude, business.longitude = extract_coordinates_from_url(scraping_manager.googlemap_page.url)
 
                                 # Additional details
-                                address_locator = scraping_manager.page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//button[@data-item-id="address"]//div[contains(@class, "fontBodyMedium")]')
+                                address_locator = scraping_manager.googlemap_page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//button[@data-item-id="address"]//div[contains(@class, "fontBodyMedium")]')
                                 business.address = address_locator.inner_text() if address_locator.count() > 0 else ""
                                 
-                                website_locator = scraping_manager.page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//a[@data-item-id="authority"]//div[contains(@class, "fontBodyMedium")]')
+                                website_locator = scraping_manager.googlemap_page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//a[@data-item-id="authority"]//div[contains(@class, "fontBodyMedium")]')
                                 business.website = website_locator.inner_text() if website_locator.count() > 0 else ""
 
-                                phone_locator = scraping_manager.page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//button[contains(@data-item-id, "phone:tel:")]//div[contains(@class, "fontBodyMedium")]')
+                                phone_locator = scraping_manager.googlemap_page.locator(f'//div[contains(@aria-label, "Informasi untuk {listing.get_attribute('aria-label')}")]//button[contains(@data-item-id, "phone:tel:")]//div[contains(@class, "fontBodyMedium")]')
                                 business.phone_number = phone_locator.inner_text() if phone_locator.count() > 0 else ""
                                 
-                                review_count_locator = scraping_manager.page.locator('//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]')
+                                review_count_locator = scraping_manager.googlemap_page.locator('//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]')
                                 business.reviews_count = int(review_count_locator.get_attribute("aria-label").split()[0].replace(',','').strip()) if review_count_locator.count() > 0 else "0"
                                 
-                                review_average_locator = scraping_manager.page.locator('//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]')
+                                review_average_locator = scraping_manager.googlemap_page.locator('//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]')
                                 business.reviews_average = float(review_average_locator.get_attribute("aria-label").split()[0].replace(',','').strip()) if review_average_locator.count() > 0 else "0"
 
                                 business_list.business_list.append(business)
                                 
-                                print(f"{index + 1}. Scraped: {business.name}")
+                                print(f"{len(business_list.business_list)}. Scraped: {business.name}")
 
                             except Exception as e:
                                 print(f"Error occurred while scraping the listing: {e}")
                         
                         # Scroll to load more results
-                        scraping_manager.page.mouse.wheel(0, 1000)
+                        scraping_manager.googlemap_page.mouse.wheel(0, 1000)
                         time.sleep(3)
                     
                     # Save data after exiting the loop
