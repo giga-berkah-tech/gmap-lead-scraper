@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
 const ScraperApp = () => {
   const [fileList, setFileList] = useState([]);
@@ -9,7 +10,7 @@ const ScraperApp = () => {
       method: "POST",
     })
       .then((response) => response.json())
-      .then((data) => alert(data.message));
+      .then((data) => toast(data.message));
   };
 
   const closeTab = () => {
@@ -17,7 +18,7 @@ const ScraperApp = () => {
       method: "POST",
     })
       .then((response) => response.json())
-      .then((data) => alert(data.message));
+      .then((data) => toast(data.message));
   };
 
   const startScraping = () => {
@@ -25,7 +26,7 @@ const ScraperApp = () => {
       method: "POST",
     })
       .then((response) => response.json())
-      .then((data) => alert(data.message));
+      .then((data) => toast(data.message));
   };
 
   const stopScraping = () => {
@@ -33,7 +34,7 @@ const ScraperApp = () => {
       method: "POST",
     })
       .then((response) => response.json())
-      .then((data) => alert(data.message));
+      .then((data) => toast(data.message));
   };
 
   const resetDownloadList = () => {
@@ -41,7 +42,7 @@ const ScraperApp = () => {
       method: "POST",
     })
       .then((response) => response.json())
-      .then((data) => alert(data.message));
+      .then((data) => () => toast(data.message));
   };
 
   const downloadXlsx = (filename) => {
@@ -71,9 +72,9 @@ const ScraperApp = () => {
     fetch(`/googlemap/open_new_tab/csv/${filename}`, {
       method: "GET",
     })
-      .then(response => response.json())
-      .then(data => console.log(data.message))
-      .catch((error) => console.error('Error:', error));
+      .then((response) => response.json())
+      .then((data) => console.log(data.message))
+      .catch((error) => console.error("Error:", error));
   };
 
   const downloadList = () => {
@@ -95,17 +96,21 @@ const ScraperApp = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">Google Maps Scraper</h1>
-        <p className="text-lg text-gray-700 mb-4">Click the buttons below to open/close the browser.</p>
-        
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">
+          Google Maps Scraper
+        </h1>
+        <p className="text-lg text-gray-700 mb-4">
+          Click the buttons below to open/close the browser.
+        </p>
+
         <div className="space-x-4 mb-6">
-          <button 
+          <button
             className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600 focus:outline-none"
             onClick={openTab}
           >
             Open Tab
           </button>
-          <button 
+          <button
             className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600 focus:outline-none"
             onClick={closeTab}
           >
@@ -113,16 +118,18 @@ const ScraperApp = () => {
           </button>
         </div>
 
-        <p className="text-lg text-gray-700 mb-4">Click the buttons below to control scraping.</p>
+        <p className="text-lg text-gray-700 mb-4">
+          Click the buttons below to control scraping.
+        </p>
 
         <div className="space-x-4 mb-6">
-          <button 
+          <button
             className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 focus:outline-none"
             onClick={startScraping}
           >
             Start Scraping
           </button>
-          <button 
+          <button
             className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 focus:outline-none"
             onClick={stopScraping}
           >
@@ -130,16 +137,18 @@ const ScraperApp = () => {
           </button>
         </div>
 
-        <p className="text-lg text-gray-700 mb-4">Click the buttons below to download or reset scraping results.</p>
+        <p className="text-lg text-gray-700 mb-4">
+          Click the buttons below to download or reset scraping results.
+        </p>
 
         <div className="space-x-4 mb-6">
-          <button 
+          <button
             className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 focus:outline-none"
             onClick={downloadList}
           >
             Get File List
           </button>
-          <button 
+          <button
             className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 focus:outline-none"
             onClick={resetDownloadList}
           >
@@ -154,19 +163,22 @@ const ScraperApp = () => {
             <li className="text-gray-500">No files found</li>
           ) : (
             fileList.map((filename) => (
-              <li key={filename} className="flex justify-between items-center border-b py-2">
+              <li
+                key={filename}
+                className="flex justify-between items-center border-b py-2"
+              >
                 <span className="text-gray-700">{filename}</span>
                 <div className="space-x-4">
-                  <button 
+                  <button
                     className="bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600 focus:outline-none"
                     onClick={() => downloadXlsx(filename)}
                   >
                     Download
                   </button>
-                  <a 
+                  <a
                     className="text-blue-500 hover:underline"
-                    href={`http://localhost:5000/googlemap/view/csv/${filename}`} 
-                    target="_blank" 
+                    href={`http://localhost:5000/googlemap/view/csv/${filename}`}
+                    target="_blank"
                     rel="noopener noreferrer"
                   >
                     View CSV
@@ -177,6 +189,18 @@ const ScraperApp = () => {
           )}
         </ul>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 };

@@ -24,6 +24,8 @@ def open_browser_route():
 def close_browser_route():
     if not scraping_manager.chromium_open:
         return jsonify({"message": "Tab is not open."})
+    elif scraping_manager.scraping_active:
+        return jsonify({"message": "Scraping is still active."})
     close_browser()
     return jsonify({"message": "Browser closed."})
 
@@ -42,6 +44,8 @@ def start_scraping_route():
 
 @googlemap_route.route('/stop_scraping', methods=['POST'])
 def stop_scraping_route():
+    if not scraping_manager.scraping_active:
+        return jsonify({"message": "Scraping is not active."})
     stop_scraping()
     return jsonify({"message": "Scraping stopped."})
 
